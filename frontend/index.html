@@ -1,42 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Field Shift — Setup</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; font-family: Arial, sans-serif; background: #edf5ef; color: #183f2b; }
-    main { width: 100%; max-width: 560px; padding: 36px; border-radius: 20px; background: white; box-shadow: 0 12px 40px #183f2b12; }
-    h1 { margin-top: 0; }
-    p { line-height: 1.6; }
-    a { color: #17663e; }
-    #status { padding: 16px; background: #edf5ef; border-radius: 10px; }
-  </style>
+  <title>Field Shift | Find Your Farm</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoT7E4A4R4rY=" crossorigin="">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <main>
-    <h1>Field Shift</h1>
-    <h2>Project setup successful</h2>
-    <p>This page is being delivered by your local server.</p>
-    <p id="status" role="status" aria-live="polite">Checking the backend connection…</p>
-    <p><a href="/api/health">View backend health check</a></p>
-    <p>Your project foundation is ready. Farm location and NASA data features will be added in the next stages.</p>
+  <header><div class="shell"><span class="brand">🌱 FIELD SHIFT</span><span class="tag">NASA Space Apps · Farm Location</span></div></header>
+  <main class="shell">
+    <div class="intro"><span class="eyebrow">STEP 01 · FARM LOCATION</span><h1>Where is your farm?</h1><p>Choose the easiest way to find your field. You never need to type latitude or longitude.</p></div>
+    <section class="panel" aria-label="Choose a location method">
+      <div class="methods">
+        <button type="button" class="method active" id="gpsMethod" aria-pressed="true"><span class="emoji">📍</span><strong>Use My Location</strong><small>Best when you are at your farm</small></button>
+        <button type="button" class="method" id="searchMethod" aria-pressed="false"><span class="emoji">🔎</span><strong>Search Village</strong><small>Find your village or nearby town</small></button>
+      </div>
+      <div id="gpsPanel" class="entry"><p>Allow location access to place a pin near your current position.</p><button id="gpsButton" class="primary" type="button">📍 Detect My Location</button></div>
+      <form id="searchPanel" class="entry hidden"><label for="placeInput">Village / town / area in India</label><div class="search-row"><input id="placeInput" name="q" placeholder="e.g. Shikaripura, Karnataka" minlength="3" maxlength="120" required><button class="primary" type="submit">Search</button></div><div id="results" class="results" aria-live="polite"></div></form>
+    </section>
+    <section class="panel map-panel"><div class="map-heading"><div><h2>Confirm your farm on the map</h2><p>Drag the green pin, or tap the map, to mark your actual field.</p></div><span class="pill">OpenStreetMap</span></div><div id="map" role="region" aria-label="Interactive farm location map"></div><div class="map-footer"><div><span class="caption">SELECTED COORDINATES</span><strong id="coordinates">Select GPS or search for a village</strong></div><button id="confirmButton" class="primary" type="button" disabled>Confirm Farm Location →</button></div></section>
+    <p id="status" class="status" role="status" aria-live="polite">Ready. Choose GPS or village search to begin.</p>
+    <section id="confirmedPanel" class="panel confirmed hidden" aria-live="polite"><h2>✓ Farm location confirmed</h2><p id="confirmedText"></p><p>The coordinates are ready to send to the NASA POWER API in the next stage.</p><pre id="confirmedJson"></pre></section>
+    <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Climate data integration is the next development stage.</footer>
   </main>
-  <script>
-    async function checkHealth() {
-      const status = document.getElementById("status");
-      try {
-        const response = await fetch("/api/health");
-        if (!response.ok) throw new Error("Health check failed");
-        const data = await response.json();
-        if (data.status !== "ok") throw new Error("Unexpected response");
-        status.textContent = "Backend connected. Server is running successfully.";
-      } catch {
-        status.textContent = "Backend connection failed. Check the server terminal and refresh this page.";
-      }
-    }
-    checkHealth();
-  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/script.js"></script>
 </body>
 </html>
