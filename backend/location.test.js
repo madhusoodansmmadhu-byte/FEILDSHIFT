@@ -92,6 +92,8 @@ test('climate error preserves confirmation; retry works; invalid JSON is visible
   await f.element('confirmButton').events.click();
   assert.equal(f.element('confirmedPanel').classList.contains('hidden'), false);
   assert.match(f.element('climateError').textContent, /NASA timeout/);
+  assert.match(f.element('climateReadyStatus').textContent, /could not finish/);
+  assert.equal(f.element('climateLoading').classList.contains('hidden'), true);
   assert.equal(f.element('retryClimate').classList.contains('hidden'), false);
   f.context.fetch = async () => ({ ok: true, json: async () => climateResponse(14.1, 75.2) });
   await f.element('retryClimate').events.click();

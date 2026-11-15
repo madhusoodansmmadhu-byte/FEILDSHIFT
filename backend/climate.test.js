@@ -151,3 +151,36 @@ test('actual climate route rejects invalid query types and returns success or su
     assert.equal((await climateRoute({ latitude: '16', longitude: '75' })).statusCode, 502);
   } finally { global.fetch = original; }
 });
+
+test('multi-year timeout recovers with sequential year requests and caches only the merged result', async () => {
+  const ranges = [];
+  const service = createNASAService({ now: () => new Date('2026-03-01T12:00:00Z'), fetchImpl: async url => {
+    const params = new URL(url).searchParams;
+    const range = [params.get('start'), params.get('end')]; ranges.push(range);
+    if (ranges.length === 1) throw Object.assign(Error('slow full history'), { name: 'TimeoutError' });
+    assert.equal(params.get('parameters'), 'T2M,PRECTOTCORR,RH2M'); assert.equal(params.get('community'), 'AG');
+    return response(fixture(...range));
+  } });
+  const [first, second] = await Promise.all([service.getNASAClimate(14, 75), service.getNASAClimate(14, 75)]);
+  assert.equal(first, second);
+  assert.deepEqual(ranges, [['20230101', '20260301'], ['20230101', '20231231'], ['20240101', '20241231'], ['20250101', '20251231'], ['20260101', '20260301']]);
+  assert.equal(Object.keys(first.parameters.T2M).length, 1156);
+  assert.equal(analyzeClimate(first).dataQuality.coverage.PRECTOTCORR.missing, 0);
+  await service.getNASAClimate(14, 75); assert.equal(ranges.length, 5);
+});
+
+test('failed yearly recovery is not cached, and rejected NASA dates are not retried', async () => {
+  let calls = 0;
+  const service = createNASAService({ now: () => new Date('2026-03-01'), fetchImpl: async url => {
+    calls++;
+    if (calls === 1 || calls === 3) throw Object.assign(Error('slow'), { name: 'TimeoutError' });
+    const params = new URL(url).searchParams;
+    return response(fixture(params.get('start'), params.get('end')));
+  } });
+  await assert.rejects(service.getNASAClimate(14, 75), { name: 'TimeoutError' });
+  const recovered = await service.getNASAClimate(14, 75); assert.equal(calls, 4);
+  assert.equal(recovered.requestedPeriod.start, '20230101');
+  let rejectedCalls = 0;
+  const rejected = createNASAService({ fetchImpl: async () => { rejectedCalls++; return { ok: false, status: 422 }; } });
+  await assert.rejects(rejected.getNASAClimate(14, 75), error => error.upstreamStatus === 422); assert.equal(rejectedCalls, 1);
+});

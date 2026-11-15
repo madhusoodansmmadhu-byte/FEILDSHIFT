@@ -38,23 +38,46 @@ function createNASAService({ fetchImpl = (...args) => fetch(...args), now = () =
     if (pending.has(key)) return pending.get(key);
     if (pending.size >= 5) throw new Error('NASA requests are busy. Please retry shortly.');
     const job = (async () => {
-      const query = new URLSearchParams({ parameters: PARAMETERS.join(','), community: 'AG', latitude: String(latitude), longitude: String(longitude), start, end, format: 'JSON', 'time-standard': 'LST' });
-      const response = await fetchImpl(`${NASA_POWER_ENDPOINT}?${query}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(60000) });
+      async function requestRange(rangeStart, rangeEnd, timeoutMs = 60000) {
+      const query = new URLSearchParams({ parameters: PARAMETERS.join(','), community: 'AG', latitude: String(latitude), longitude: String(longitude), start: rangeStart, end: rangeEnd, format: 'JSON', 'time-standard': 'LST' });
+      const response = await fetchImpl(`${NASA_POWER_ENDPOINT}?${query}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) });
       if (!response.ok) {
         const error = new Error(`NASA POWER HTTP ${response.status}${response.status === 422 ? ': requested dates may not yet be published; retry later' : ''}`);
         error.upstreamStatus = response.status;
-        throw error; // No automatic end-date guessing or repeated upstream calls.
+        throw error; // Do not guess dates or retry rejected requests.
       }
       let data;
-      try { data = await response.json(); } catch { throw new Error('NASA POWER returned invalid JSON'); }
+      try { data = await response.json(); } catch (error) {
+        if (['TimeoutError', 'AbortError'].includes(error.name)) throw error;
+        throw new Error('NASA POWER returned invalid JSON');
+      }
       const parameters = data?.properties?.parameter;
       if (!parameters || PARAMETERS.some(name => !parameters[name] || typeof parameters[name] !== 'object' || Array.isArray(parameters[name]))) throw new Error('NASA POWER response is missing required daily parameters');
       for (const name of PARAMETERS) {
         for (const date of Object.keys(parameters[name])) {
           parsePowerDate(date);
-          if (date < start || date > end) throw new Error('NASA returned observations outside the requested period');
+          if (date < rangeStart || date > rangeEnd) throw new Error('NASA returned observations outside the requested period');
         }
       }
+      return data;
+      }
+      let data;
+      try { data = await requestRange(start, end); }
+      catch (error) {
+        const timeout = ['TimeoutError', 'AbortError'].includes(error.name) || ['UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'ETIMEDOUT'].includes(error.cause?.code);
+        if (!timeout || start.slice(0, 4) === end.slice(0, 4)) throw error;
+        // One bounded recovery pass: smaller nonoverlapping requests, sequentially.
+        // Never shorten the requested history or cache partial recovery results.
+        const merged = Object.fromEntries(PARAMETERS.map(name => [name, {}]));
+        for (let year = Number(start.slice(0, 4)); year <= Number(end.slice(0, 4)); year++) {
+          const chunk = await requestRange(start > `${year}0101` ? start : `${year}0101`, end < `${year}1231` ? end : `${year}1231`, 30000);
+          if (data && (JSON.stringify(data.parameters) !== JSON.stringify(chunk.parameters) || data.header?.fill_value !== chunk.header?.fill_value)) throw new Error('NASA returned inconsistent metadata between historical requests');
+          data = chunk;
+          for (const name of PARAMETERS) Object.assign(merged[name], chunk.properties.parameter[name]);
+        }
+        data = { ...data, properties: { ...data.properties, parameter: merged } };
+      }
+      const parameters = data.properties.parameter;
       const result = { source: 'NASA POWER', coordinates: { latitude, longitude }, requestedPeriod: { start, end }, parameters, metadata: { header: data.header ?? null, geometry: data.geometry ?? null, definitions: data.parameters ?? null, timeStandard: 'LST' } };
       require('./climateAnalysis').analyzeClimate(result); // Cache only usable, validated data.
       cache.set(key, { value: result, expires: now().getTime() + ttlMs });

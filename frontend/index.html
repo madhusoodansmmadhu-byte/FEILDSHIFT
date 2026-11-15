@@ -19,16 +19,16 @@
       <div id="gpsPanel" class="entry"><p>Allow location access to place a pin near your current position.</p><button id="gpsButton" class="primary" type="button">📍 Detect My Location</button></div>
       <form id="searchPanel" class="entry hidden"><label for="placeInput">Village / town / area in India</label><div class="search-row"><input id="placeInput" name="q" placeholder="e.g. Shikaripura, Karnataka" minlength="3" maxlength="120" required><button class="primary" type="submit">Search</button></div><div id="results" class="results" aria-live="polite"></div></form>
     </section>
-    <section class="panel map-panel"><div class="map-heading"><div><h2>Confirm your farm on the map</h2><p>Drag the green pin, or tap the map, to mark your actual field.</p></div><span class="pill">OpenStreetMap</span></div><div id="map" role="region" aria-label="Interactive farm location map"></div><div class="map-footer"><div><span class="caption">SELECTED COORDINATES</span><strong id="coordinates">Select GPS or search for a village</strong></div><button id="confirmButton" class="primary" type="button" disabled>Confirm Farm Location →</button></div></section>
+    <section class="panel map-panel"><div class="map-heading"><div><h2>Confirm your farm on the map</h2><p>Drag the pin, or tap the map, to mark your actual field.</p></div><span class="pill">OpenStreetMap</span></div><div id="map" role="region" aria-label="Interactive farm location map"></div><div class="map-footer"><div hidden><span class="caption">SELECTED COORDINATES</span><strong id="coordinates">Select GPS or search for a village</strong></div><button id="confirmButton" class="primary" type="button" disabled>Confirm Farm Location →</button></div></section>
     <p id="status" class="status" role="status" aria-live="polite">Ready. Choose GPS or village search to begin.</p>
-    <section id="confirmedPanel" class="panel confirmed hidden" aria-live="polite"><h2>✓ Farm location confirmed</h2><p id="confirmedText"></p><p>Your confirmed coordinates are used for the historical climate analysis below.</p><pre id="confirmedJson"></pre></section>
+    <section id="confirmedPanel" class="panel confirmed hidden" aria-live="polite"><h2>✓ Farm location confirmed</h2><p id="confirmedText" hidden></p><p>Your selected farm location will be used for crop recommendations.</p><pre id="confirmedJson" hidden></pre></section>
     <section id="climatePanel" class="panel climate-panel hidden" aria-label="NASA climate analysis">
-      <h2>NASA POWER Climate Analysis</h2>
-      <p>Historical climate estimates for your confirmed location, 2023–2026. Karnataka-focused prototype.</p>
-      <p id="climateLoading" class="hidden" role="status">Fetching NASA climate data… This may take up to a minute.</p>
+      <h2>Preparing your farm assessment</h2>
+      <p id="climateReadyStatus" role="status">Connecting to NASA POWER and retrieving historical climate information…</p>
+      <p id="climateLoading" class="hidden" role="status">Analyzing historical climate information for your farm… If NASA is slow, smaller historical requests will be tried automatically. This may take a few minutes.</p>
       <p id="climateError" class="error hidden" role="alert"></p>
       <button id="retryClimate" type="button" class="primary hidden">Retry NASA Data</button>
-      <div id="climateResults" class="hidden">
+      <div id="climateResults" class="hidden" hidden aria-hidden="true">
         <p id="climatePeriod"></p>
         <div class="climate-grid">
           <article class="climate-card"><h3>Mean Temperature</h3><strong id="climateTemperature">—</strong></article>
@@ -46,9 +46,36 @@
       </div>
       <p class="climate-source">Source: NASA POWER Daily Point API. Gridded climate estimates, not measurements from an on-farm sensor. Farmer confirmation identifies the selected point, not the exact conditions across the field.</p>
     </section>
+    <section id="farmerLandSection" class="panel hidden" aria-labelledby="farmerLandHeading">
+      <span class="eyebrow">STEP 03 · YOUR LAND</span><h2 id="farmerLandHeading">Farmer Land Details</h2>
+      <form id="farmerLandForm">
+        <div class="farmer-grid">
+          <div><label for="soilType">Soil type</label><select id="soilType" required></select></div>
+          <div><label for="irrigationAvailability">Irrigation availability</label><select id="irrigationAvailability" required></select></div>
+          <div><label for="previousCrop">Previous crop</label><select id="previousCrop" required></select></div>
+          <div><label for="currentCrop">Current crop</label><select id="currentCrop" required></select></div>
+          <div><label for="nextSeason">Next growing season</label><select id="nextSeason" required></select></div>
+          <div><label for="plantingDate">Expected planting date</label><input id="plantingDate" type="date" required></div>
+        </div>
+        <div class="assessment-actions"><button id="validateFarmerButton" class="primary" type="submit">Validate Farmer Details</button><button id="clearFarmerButton" type="button">Clear Farmer Details</button><button id="generateRecommendationsButton" class="primary" type="button" disabled>Generate Recommendations</button></div>
+        <p id="farmerFormStatus" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section id="recommendationSection" class="panel hidden" aria-labelledby="recommendationHeading">
+      <span class="eyebrow">STEP 04 · CROP SUITABILITY</span><h2 id="recommendationHeading">Crop Recommendations</h2>
+      <p id="recommendationStatus" role="status" aria-live="polite"></p>
+      <button id="retryRecommendationsButton" class="primary hidden" type="button">Retry Recommendations</button>
+      <h3>Top recommended crops — up to three</h3><div id="topRecommendations" class="recommendation-grid"></div>
+      <h3>All 20 crop evaluations</h3><div id="allCropResults" class="table-scroll" tabindex="0" role="region" aria-label="Crop evaluation table"></div>
+      <div id="recommendationWarnings"></div>
+      <button id="newAssessmentButton" class="primary" type="button">Start a New Assessment</button>
+    </section>
     <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Climate source: <a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA POWER</a>.</footer>
   </main>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/farmerSession.js"></script>
+  <script src="/recommendation-dashboard.js"></script>
+  <script src="/land-form.js"></script>
   <script src="/script.js"></script>
 </body>
 </html>

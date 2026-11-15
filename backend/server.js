@@ -4,6 +4,8 @@ const { getNASAClimate } =
 const express = require('express');
 const path = require('node:path');
 const { analyzeClimate } = require('./services/climateAnalysis');
+const farmerLandRoutes = require('./routes/farmerLandRoutes');
+const ruleEngineRoutes = require('./routes/ruleEngineRoutes');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -109,6 +111,8 @@ app.get('/api/climate', async (req, res) => {
   }
 });
 
+app.use('/api/farmer-land', farmerLandRoutes);
+app.use('/api/rule-based-scores', ruleEngineRoutes);
 app.use(express.static(path.join(__dirname, '../frontend')));
 if (require.main === module) {
 const server = app.listen(port, '127.0.0.1', () => {

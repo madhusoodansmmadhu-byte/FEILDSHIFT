@@ -42,6 +42,7 @@ function updateSelection(latitude, longitude, source = method) {
   marker.setLatLng([latitude, longitude]);
   selected = { latitude, longitude, method: source };
   selectionVersion++;
+  window.FarmerLand?.reset();
   if (climateController) climateController.abort();
   confirmedClimateLocation = null;
   $('climatePanel').classList.add('hidden');
@@ -149,7 +150,7 @@ $('confirmButton').addEventListener('click', async () => {
   const submitted = { ...selected };
   confirmationPending = true;
   $('confirmButton').disabled = true;
-  status('Confirming selected coordinates…');
+  status('Confirming your farm location…');
   try {
     const response = await fetch('/api/farm-location', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -161,11 +162,13 @@ $('confirmButton').addEventListener('click', async () => {
     $('confirmedText').textContent = `Latitude: ${data.latitude.toFixed(6)} | Longitude: ${data.longitude.toFixed(6)}`;
     $('confirmedJson').textContent = JSON.stringify(data, null, 2);
     $('confirmedPanel').classList.remove('hidden');
-    status('Farm coordinates confirmed successfully.');
+    status('Farm location confirmed successfully.');
     $('confirmedPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     confirmedClimateLocation = { latitude: data.latitude, longitude: data.longitude, version };
+    confirmationPending = false;
+    $('confirmButton').disabled = false;
     await loadClimate(data.latitude, data.longitude, version);
-  } catch (error) { status(error.message, true); }
+  } catch (error) { if (version === selectionVersion) status(error.message, true); }
   finally { confirmationPending = false; $('confirmButton').disabled = !selected; }
 });
 
@@ -174,6 +177,8 @@ async function loadClimate(latitude, longitude, version) {
   if (climateController) climateController.abort();
   const controller = new AbortController();
   climateController = controller;
+  window.FarmerLand?.reset();
+  $('climateReadyStatus').textContent = 'Connecting to NASA POWER and retrieving historical climate information…';
   $('climatePanel').classList.remove('hidden');
   $('climateResults').classList.add('hidden');
   $('climateLoading').classList.remove('hidden');
@@ -188,9 +193,12 @@ async function loadClimate(latitude, longitude, version) {
     if (controller.signal.aborted || controller !== climateController || version !== selectionVersion) return;
     if (data.coordinates?.latitude !== latitude || data.coordinates?.longitude !== longitude) throw new Error('Climate coordinates do not match the confirmed farm. Please retry.');
     renderClimateDashboard(data);
+    $('climateReadyStatus').textContent = 'Historical climate information analyzed. Your land details can now be entered.';
+    if (window.FarmerLand) await window.FarmerLand.ready({ latitude, longitude, version });
   } catch (error) {
     if (controller.signal.aborted || controller !== climateController || version !== selectionVersion) return;
-    $('climateError').textContent = `${error.message || 'Network connection failed.'} Your farm location remains confirmed.`;
+    $('climateReadyStatus').textContent = 'Climate processing could not finish. Retry to continue to your land details.';
+    $('climateError').textContent = error.message || 'Network connection failed. Your farm location remains confirmed. Please retry.';
     $('climateError').classList.remove('hidden');
     $('retryClimate').classList.remove('hidden');
   } finally {
@@ -255,3 +263,11 @@ function renderClimateDashboard(data) {
 if (typeof ResizeObserver !== 'undefined') {
   new ResizeObserver(() => map.invalidateSize({ pan: false })).observe($('map'));
 }
+window.FieldShift = {
+  startNewAssessment() {
+    if (selected) updateSelection(selected.latitude, selected.longitude, selected.method);
+    else window.FarmerLand?.reset();
+    status('New assessment started. Choose or confirm your farm location.');
+    $('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
