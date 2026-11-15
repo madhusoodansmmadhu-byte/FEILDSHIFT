@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Field Shift | Find Your Farm</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoT7E4A4R4rY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -21,8 +21,32 @@
     </section>
     <section class="panel map-panel"><div class="map-heading"><div><h2>Confirm your farm on the map</h2><p>Drag the green pin, or tap the map, to mark your actual field.</p></div><span class="pill">OpenStreetMap</span></div><div id="map" role="region" aria-label="Interactive farm location map"></div><div class="map-footer"><div><span class="caption">SELECTED COORDINATES</span><strong id="coordinates">Select GPS or search for a village</strong></div><button id="confirmButton" class="primary" type="button" disabled>Confirm Farm Location →</button></div></section>
     <p id="status" class="status" role="status" aria-live="polite">Ready. Choose GPS or village search to begin.</p>
-    <section id="confirmedPanel" class="panel confirmed hidden" aria-live="polite"><h2>✓ Farm location confirmed</h2><p id="confirmedText"></p><p>The coordinates are ready to send to the NASA POWER API in the next stage.</p><pre id="confirmedJson"></pre></section>
-    <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Climate data integration is the next development stage.</footer>
+    <section id="confirmedPanel" class="panel confirmed hidden" aria-live="polite"><h2>✓ Farm location confirmed</h2><p id="confirmedText"></p><p>Your confirmed coordinates are used for the historical climate analysis below.</p><pre id="confirmedJson"></pre></section>
+    <section id="climatePanel" class="panel climate-panel hidden" aria-label="NASA climate analysis">
+      <h2>NASA POWER Climate Analysis</h2>
+      <p>Historical climate estimates for your confirmed location, 2023–2026. Karnataka-focused prototype.</p>
+      <p id="climateLoading" class="hidden" role="status">Fetching NASA climate data… This may take up to a minute.</p>
+      <p id="climateError" class="error hidden" role="alert"></p>
+      <button id="retryClimate" type="button" class="primary hidden">Retry NASA Data</button>
+      <div id="climateResults" class="hidden">
+        <p id="climatePeriod"></p>
+        <div class="climate-grid">
+          <article class="climate-card"><h3>Mean Temperature</h3><strong id="climateTemperature">—</strong></article>
+          <article class="climate-card"><h3>Mean Annual Rainfall</h3><strong id="climateRainfall">—</strong><p>Complete valid years from 2023–2025 only.</p></article>
+          <article class="climate-card"><h3>Mean Humidity</h3><strong id="climateHumidity">—</strong></article>
+        </div>
+        <h3>Monthly Rainfall</h3><p>Observed monthly sums; incomplete months are explicitly labelled.</p><div id="monthlyRainfallChart"></div>
+        <h3>Monthly Temperature</h3><div id="monthlyTemperatureChart"></div>
+        <h3>Annual Rainfall Comparison</h3><p>Complete annual totals and separately labelled incomplete observed sums.</p><div id="annualRainfallChart"></div>
+        <h3>Monthly Rainfall Climatology (2023–2025)</h3><p>A short historical comparison, not a 30-year climate normal.</p><div id="rainfallClimatologyChart"></div>
+        <h3>2026 Year-to-date Rainfall</h3><p id="climateYtd"></p>
+        <h3>Equivalent-date Rainfall Comparison</h3><div id="equivalentRainfallChart"></div>
+        <h3>Observation Coverage</h3><div id="climateCoverage"></div>
+        <p id="climateDataQuality"></p>
+      </div>
+      <p class="climate-source">Source: NASA POWER Daily Point API. Gridded climate estimates, not measurements from an on-farm sensor. Farmer confirmation identifies the selected point, not the exact conditions across the field.</p>
+    </section>
+    <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Climate source: <a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA POWER</a>.</footer>
   </main>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/script.js"></script>
