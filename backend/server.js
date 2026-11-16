@@ -8,7 +8,7 @@ const farmerLandRoutes = require('./routes/farmerLandRoutes');
 const ruleEngineRoutes = require('./routes/ruleEngineRoutes');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 10000;
 app.disable('x-powered-by');
 app.use(express.json());
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
@@ -115,7 +115,7 @@ app.use('/api/farmer-land', farmerLandRoutes);
 app.use('/api/rule-based-scores', ruleEngineRoutes);
 app.use(express.static(path.join(__dirname, '../frontend')));
 if (require.main === module) {
-const server = app.listen(port, '127.0.0.1', () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Field Shift is running at http://localhost:${port}`);
   console.log('Press Ctrl+C to stop.');
 });
